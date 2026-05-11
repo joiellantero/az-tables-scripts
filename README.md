@@ -12,8 +12,8 @@
 
     Sample csv: 
     ```csv
-    'Name or Address' , 'Policy' , 'Data'
-    'cryptocurrency.eicar.network' , 'BlockNxdomainDomain' , ''
+    'Address' , 'Policy' , 'Data'
+    'malicious.domain' , 'Block' , ''
     ```
 
 2. `python upload.py`.
