@@ -1,4 +1,4 @@
-# Upload CSV to Azure Table Storage
+# Azure Table Scripts
 
 ## Setup before running the scripts
 1. create a virtual environment to store your dependencies by running `python -m venv venv`
