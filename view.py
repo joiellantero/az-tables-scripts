@@ -2,18 +2,27 @@ import argparse
 import os
 
 from azure.data.tables import TableServiceClient
-from azure.identity import AzureCliCredential
+from azure.identity import AzureCliCredential, ClientSecretCredential
 from dotenv import load_dotenv
 
 load_dotenv()
 
 STORAGE_ACCOUNT_NAME = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
 DEFAULT_TABLE_NAME = os.getenv("AZURE_TABLE_NAME")
+AZURE_TENANT_ID = os.getenv("AZURE_TENANT_ID")
+AZURE_CLIENT_ID = os.getenv("AZURE_CLIENT_ID")
+AZURE_CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET")
 
 
-def view_table(table_name: str, rows: int) -> None:
+def get_credential(use_cli: bool):
+    if use_cli:
+        return AzureCliCredential()
+    return ClientSecretCredential(AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET)
+
+
+def view_table(table_name: str, rows: int, use_cli: bool) -> None:
     account_url = f"https://{STORAGE_ACCOUNT_NAME}.table.core.windows.net"
-    credential = AzureCliCredential()
+    credential = get_credential(use_cli)
     service_client = TableServiceClient(endpoint=account_url, credential=credential)
     table_client = service_client.get_table_client(table_name)
 
@@ -74,6 +83,11 @@ def main() -> None:
         default=10,
         help="Number of rows to display (default: 10)",
     )
+    parser.add_argument(
+        "--cli",
+        action="store_true",
+        help="Use Azure CLI credentials (az login) instead of service account from .env",
+    )
     args = parser.parse_args()
 
     if not args.table:
@@ -81,7 +95,7 @@ def main() -> None:
             "Error: No table name provided. Use -t or set AZURE_TABLE_NAME in .env"
         )
 
-    view_table(args.table, args.rows)
+    view_table(args.table, args.rows, args.cli)
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import argparse
 import csv
 import hashlib
 import os
@@ -5,13 +6,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from azure.data.tables import TableServiceClient, TableTransactionError
-from azure.identity import AzureCliCredential
+from azure.identity import AzureCliCredential, ClientSecretCredential
 from dotenv import load_dotenv
 
 load_dotenv()
 
 STORAGE_ACCOUNT_NAME = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
 DEFAULT_TABLE_NAME = os.getenv("AZURE_TABLE_NAME")
+AZURE_TENANT_ID = os.getenv("AZURE_TENANT_ID")
+AZURE_CLIENT_ID = os.getenv("AZURE_CLIENT_ID")
+AZURE_CLIENT_SECRET = os.getenv("AZURE_CLIENT_SECRET")
 UPLOAD_DIR = Path(__file__).parent / "upload_files"
 BATCH_SIZE = 100  # Azure Tables max per transaction
 MAX_WORKERS = int(os.getenv("MAX_WORKERS", "10"))
@@ -113,6 +117,14 @@ def main() -> None:
     if not STORAGE_ACCOUNT_NAME:
         raise SystemExit("Error: AZURE_STORAGE_ACCOUNT_NAME is not set in .env")
 
+    parser = argparse.ArgumentParser(description="Upload CSVs to Azure Tables")
+    parser.add_argument(
+        "--cli",
+        action="store_true",
+        help="Use Azure CLI credentials (az login) instead of service account from .env",
+    )
+    args = parser.parse_args()
+
     csv_files = sorted(UPLOAD_DIR.glob("*.csv"))
     if not csv_files:
         raise SystemExit(f"No CSV files found in {UPLOAD_DIR}")
@@ -120,7 +132,10 @@ def main() -> None:
     print(f"Found {len(csv_files)} CSV file(s) in {UPLOAD_DIR}")
 
     account_url = f"https://{STORAGE_ACCOUNT_NAME}.table.core.windows.net"
-    credential = AzureCliCredential()
+    if args.cli:
+        credential = AzureCliCredential()
+    else:
+        credential = ClientSecretCredential(AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET)
     service_client = TableServiceClient(endpoint=account_url, credential=credential)
 
     for csv_path in csv_files:
