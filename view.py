@@ -1,4 +1,5 @@
 import argparse
+import csv
 import os
 
 from azure.data.tables import TableServiceClient
@@ -20,7 +21,7 @@ def get_credential(use_cli: bool):
     return ClientSecretCredential(AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET)
 
 
-def view_table(table_name: str, rows: int, use_cli: bool) -> None:
+def view_table(table_name: str, rows: int, use_cli: bool, output: str | None = None) -> None:
     account_url = f"https://{STORAGE_ACCOUNT_NAME}.table.core.windows.net"
     credential = get_credential(use_cli)
     service_client = TableServiceClient(endpoint=account_url, credential=credential)
@@ -44,8 +45,17 @@ def view_table(table_name: str, rows: int, use_cli: bool) -> None:
         print(f"Table '{table_name}' is empty.")
         return
 
-    # Build column widths for formatting
     columns = list(data[0].keys())
+
+    if output:
+        with open(output, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=columns)
+            writer.writeheader()
+            writer.writerows(data)
+        print(f"Exported {len(data)} row(s) from '{table_name}' to '{output}'")
+        return
+
+    # Build column widths for formatting
     widths = {col: len(col) for col in columns}
     for row in data:
         for col in columns:
@@ -88,6 +98,13 @@ def main() -> None:
         action="store_true",
         help="Use Azure CLI credentials (az login) instead of service account from .env",
     )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        default=None,
+        help="Export results to a CSV file (e.g., -o output.csv)",
+    )
     args = parser.parse_args()
 
     if not args.table:
@@ -95,7 +112,7 @@ def main() -> None:
             "Error: No table name provided. Use -t or set AZURE_TABLE_NAME in .env"
         )
 
-    view_table(args.table, args.rows, args.cli)
+    view_table(args.table, args.rows, args.cli, args.output)
 
 
 if __name__ == "__main__":

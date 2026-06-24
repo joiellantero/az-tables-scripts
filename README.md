@@ -59,4 +59,10 @@ python view.py -n 50
 
 # Specify a different table
 python view.py -t myothertable -n 20
+
+# Export to CSV
+python view.py -o output.csv
+
+# Export 100 rows from a specific table to CSV
+python view.py -t myothertable -n 100 -o export.csv
 ```
