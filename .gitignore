@@ -3,3 +3,4 @@
 env/
 upload_files/
 .zed
+*.csv
